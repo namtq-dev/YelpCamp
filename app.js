@@ -7,8 +7,8 @@ const methodOverride = require('method-override');
 const catchAsync = require('./helpers/catchAsync');
 const ExpressError = require('./helpers/ExpressError');
 const Campground = require('./models/campground');
-const { campgroundSchema } = require('./schemas');
 const Review = require('./models/review');
+const { campgroundSchema, reviewSchema } = require('./schemas');
 
 connectDB().catch(err => console.log(err));
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'));
@@ -29,6 +29,15 @@ app.use(methodOverride('_method'));
 
 const validateCampground = (req, res, next) => {
     const { error } = campgroundSchema.validate(req.body);
+    if (error) {
+        const msg = error.details.map(el => el.message).join(',');
+        throw new ExpressError(msg, 400);
+    }
+    next();
+}
+
+const validateReview = (req, res, next) => {
+    const { error } = reviewSchema.validate(req.body);
     if (error) {
         const msg = error.details.map(el => el.message).join(',');
         throw new ExpressError(msg, 400);
@@ -79,7 +88,7 @@ app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     res.redirect('/campgrounds');
 }))
 
-app.post('/campgrounds/:id/reviews', catchAsync(async (req, res) => {
+app.post('/campgrounds/:id/reviews', validateReview, catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findById(id);
     const review = new Review(req.body.review);
