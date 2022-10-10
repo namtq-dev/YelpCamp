@@ -8,6 +8,7 @@ const catchAsync = require('./helpers/catchAsync');
 const ExpressError = require('./helpers/ExpressError');
 const Campground = require('./models/campground');
 const { campgroundSchema } = require('./schemas');
+const Review = require('./models/review');
 
 connectDB().catch(err => console.log(err));
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'));
@@ -76,6 +77,16 @@ app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     await Campground.findByIdAndDelete(id);
     res.redirect('/campgrounds');
+}))
+
+app.post('/campgrounds/:id/reviews', catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const campground = await Campground.findById(id);
+    const review = new Review(req.body.review);
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`)
 }))
 
 app.all('*', (req, res, next) => {
