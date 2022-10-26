@@ -5,11 +5,15 @@ const flash = require('connect-flash');
 const path = require('path');
 const ejsMate = require('ejs-mate');
 const methodOverride = require('method-override');
+const passport = require('passport');
+const localStrategy = require('passport-local');
 
 const ExpressError = require('./helpers/ExpressError');
 
 const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
+
+const User = require('./models/user');
 
 connectDB().catch(err => console.log(err));
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'));
@@ -41,6 +45,12 @@ const sessionConfig = {
 }
 app.use(session(sessionConfig));
 app.use(flash());
+
+app.use(passport.initialize());
+app.use(passport.session()); // passport.session() is used AFTER session()
+passport.use(new localStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 app.use((req, res, next) => {
     res.locals.success = req.flash('success');
